@@ -81,8 +81,6 @@ export class VisionPlugin extends BaseBlockPlugin<typeof SETTINGS> {
     // Construct the base64 data URL for the image
     const base64ImageUrl = `data:${mimeType};base64,${base64Image}`;
 
-    console.log("Base64 Image URL:", base64ImageUrl); // Check the full URL
-
     const chatCompletion = await groqClient.chat.completions.create({
       "messages": [
         {
