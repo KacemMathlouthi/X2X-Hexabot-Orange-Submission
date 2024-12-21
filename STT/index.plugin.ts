@@ -29,9 +29,6 @@ export class SpeechToTextPlugin extends BaseBlockPlugin<typeof SETTINGS> {
     private readonly attachmentService: AttachmentService
   ) {
     super('stt-plugin', pluginService);
-    this.groqClient = new Groq({
-      apiKey: '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',
-    });
   }
 
   getPath(): string {
@@ -46,6 +43,10 @@ export class SpeechToTextPlugin extends BaseBlockPlugin<typeof SETTINGS> {
   ): Promise<StdOutgoingEnvelope> {
     const settings = await this.settingService.getSettings();
     const args = this.getArguments(block);
+    const groqClient = new Groq({
+      apiKey: args['API Key'],
+    })
+    
     console.log('Here is my context:', context);
 
     // Extract file id from context text
@@ -66,7 +67,7 @@ export class SpeechToTextPlugin extends BaseBlockPlugin<typeof SETTINGS> {
     var path = attachment.location
     console.log("MY CURRENT PATH IS",__dirname)
 
-    const transcription = await this.groqClient.audio.transcriptions.create({
+    const transcription = await groqClient.audio.transcriptions.create({
       file: fs.createReadStream("/app/uploads/"+path),
       model: "distil-whisper-large-v3-en",
       response_format: "verbose_json",
