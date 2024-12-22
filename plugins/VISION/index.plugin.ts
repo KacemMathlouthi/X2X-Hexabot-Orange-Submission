@@ -3,6 +3,10 @@ import { Block } from '@/chat/schemas/block.schema';
 import { Context } from '@/chat/schemas/types/context';
 import { OutgoingMessageFormat, StdOutgoingEnvelope } from '@/chat/schemas/types/message';
 import { BlockService } from '@/chat/services/block.service';
+import SpeechHelper from '@/custom/extensions/helpers/speech-helper/index.helper';
+import { HelperService } from '@/helper/helper.service';
+import { HelperType } from '@/helper/types';
+import { LoggerService } from '@/logger/logger.service';
 import { BaseBlockPlugin } from '@/plugins/base-block-plugin';
 import { PluginService } from '@/plugins/plugins.service';
 import { PluginBlockTemplate } from '@/plugins/types';
@@ -26,7 +30,10 @@ export class VisionPlugin extends BaseBlockPlugin<typeof SETTINGS> {
     pluginService: PluginService,
     private readonly blockService: BlockService,
     private readonly settingService: SettingService,
-    private readonly attachmentService: AttachmentService
+    private readonly attachmentService: AttachmentService,
+    private readonly helperService: HelperService,
+    private readonly logger: LoggerService
+    
   ) {
     super('vision-plugin', pluginService);
   }
@@ -46,6 +53,8 @@ export class VisionPlugin extends BaseBlockPlugin<typeof SETTINGS> {
     const groqClient = new Groq({
       apiKey: args['API Key'],
     })
+    const audioBool = 1
+    const helper = this.helperService.use(HelperType.UTIL, SpeechHelper)
     
     console.log('Here is my context:', context);
 
@@ -106,13 +115,17 @@ export class VisionPlugin extends BaseBlockPlugin<typeof SETTINGS> {
       "stream": false,
       "stop": null
     });  
-    console.log(chatCompletion.choices[0].message.content);
-
-    const msg: StdOutgoingEnvelope = {
-      format: OutgoingMessageFormat.text,
-      message: { text: chatCompletion.choices[0].message.content },
-    };
-    return msg;
+    const output = chatCompletion.choices[0].message.content
+    console.log(output);
+    if(!audioBool){
+      const msg: StdOutgoingEnvelope = {
+        format: OutgoingMessageFormat.text,
+        message: { text: output },
+      };
+      return msg;
+    }
+    const audio = await helper.textToSpeech(output, this.attachmentService)
+    return audio
   }
 
   private getMimeType(imagePath: string): string {
