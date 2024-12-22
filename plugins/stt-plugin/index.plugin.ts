@@ -50,12 +50,13 @@ export class SpeechToTextPlugin extends BaseBlockPlugin<typeof SETTINGS> {
     try {
       const args = this.getArguments(block);
       const audioBool = args['AudioOutput'];
+      const sysPrompt = args['GeminiPrompt'];
 
       const helper = this.helperService.use(HelperType.UTIL, SpeechHelper)
       const transcription = await helper.speechToText(context.text, this.attachmentService);
 
       const ollama = this.helperService.use(HelperType.LLM, GeminiLlmHelper);
-      const text = await ollama.generateChatCompletion(transcription, 'gemini-1.5-flash', 'You are an AI assistant that answers briefly, 2-3 phrases maximum', [])
+      const text = await ollama.generateChatCompletion(transcription, 'gemini-1.5-flash', sysPrompt, [])
       if (audioBool === '1') {
           const audio = await helper.textToSpeech(text, this.attachmentService);
           return audio;

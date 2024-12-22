@@ -71,7 +71,7 @@ export default class SpeechHelper
 
     async textToSpeechHelper(text: string, attachmentService: AttachmentService): Promise<AttachmentPayload<WithUrl<Attachment>>> {
         const settings = await this.getSettings()
-        const apiKey = "sk_9333f3ec62d9494d3b5e6e25d57c454e4d10b225d695aa72"
+        const apiKey = "sk_63078600c4bd70da9b3b69c42dfe3a206948cff085e54103"
         const voiceId = "9BWtsMINqrJLrRacOk9x"
   
         if (!apiKey || !voiceId) {
