@@ -14,7 +14,7 @@ import * as fs from 'fs';
 import * as path from 'path'; // Added to create a temporary path for the audio file
 
 import { Attachment } from '@/attachment/schemas/attachment.schema';
-import { FileType, WithUrl } from '@/chat/schemas/types/attachment';
+import { AttachmentPayload, FileType, WithUrl } from '@/chat/schemas/types/attachment';
 import SETTINGS from './settings';
 
 @Injectable()
@@ -48,17 +48,14 @@ export class TextToSpeechPlugin extends BaseBlockPlugin<typeof SETTINGS> {
 
     // Get the text to convert to speech (from block or user input)
     const context_msg = context.text;
-
+    console.log(context_msg)
     try {
       // Call the textToSpeech function to generate audio and get the uploaded file's URL
-      const uploadedFileUrl = await this.textToSpeech(context_msg);
-      console.log(uploadedFileUrl)
+      const uploadedFile = await this.textToSpeech(context_msg);
+      console.log(uploadedFile)
       // Construct the attachment message envelope
       const attachmentMessage: StdOutgoingAttachmentMessage<WithUrl<Attachment>> = {
-      attachment:{
-        type: FileType.audio, 
-        payload: uploadedFileUrl,
-      }
+      attachment:uploadedFile
     }
       const attachmentEnvelope: StdOutgoingAttachmentEnvelope = {
         format: OutgoingMessageFormat.attachment,
@@ -79,16 +76,16 @@ export class TextToSpeechPlugin extends BaseBlockPlugin<typeof SETTINGS> {
     }
   }
 
-  private async textToSpeech(text: string): Promise<Attachment> {
-    const apiKey = "sk_9333f3ec62d9494d3b5e6e25d57c454e4d10b225d695aa72";  // You should not hardcode this in production
+  private async textToSpeech(text: string): Promise<AttachmentPayload<WithUrl<Attachment>>> {
+    const apiKey = "sk_9333f3ec62d9494d3b5e6e25d57c454e4d10b225d695aa72"; // Avoid hardcoding in production
     const voiceId = "9BWtsMINqrJLrRacOk9x";
-
+  
     if (!apiKey || !voiceId) {
       throw new Error("Missing APIKEY or VOICEID.");
     }
-
+  
     const client = new ElevenLabsClient({ apiKey });
-
+  
     try {
       // Request audio stream from the ElevenLabs API
       const audioStream = await client.textToSpeech.convert(voiceId, {
@@ -96,57 +93,65 @@ export class TextToSpeechPlugin extends BaseBlockPlugin<typeof SETTINGS> {
         text: text,
         model_id: "eleven_multilingual_v2",
       });
-
-      // Create a temporary file path for the audio file to upload it
-      const tempFilePath = path.join(__dirname, 'temp_audio.mp3');
-      const writeStream = fs.createWriteStream(tempFilePath);
-
+  
+      // Generate unique file and directory names
+      const randomId = crypto.randomBytes(8).toString('hex');
+      const fileName = `speech_${randomId}.mp3`;
+      const uploadDir = '/uploads';
+      const filePath = path.join(uploadDir, fileName);
+  
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+      const writeStream = fs.createWriteStream(filePath);
       audioStream.pipe(writeStream);
-      const randomId = crypto.randomBytes(8).toString('hex');  // Generates an 8-byte hex string
-      const fileName = `speech_${randomId}.mp3`;  // Append the random ID to the file name
   
       return new Promise((resolve, reject) => {
         writeStream.on('finish', async () => {
           try {
-            // Once the audio file is written, use the AttachmentService to upload it
-            const fileToUpload = [{
-              fieldname: 'file',  // The name of the field in the form
-              originalname: 'speech.mp3', // The original name of the file
-              encoding: '7bit',  // The encoding, commonly '7bit'
-              mimetype: 'audio/mpeg',  // MIME type of the file
-              size: 4000,  // File size
-              destination: __dirname,  // Destination path (this is a mock, not needed by multer)
-              filename: fileName,  // File name that will be used on the server
-              path: tempFilePath,  // Path to the file
-              stream: fs.createReadStream(tempFilePath),  // The readable stream of the file
-              buffer: Buffer.alloc(0),  // Mock buffer, empty since the file is already on disk
-            }];
+            const stats = fs.statSync(filePath);
   
-            const uploadedFiles = await this.attachmentService.uploadFiles({ file: fileToUpload });
+            // Create Attachment in the database
+            const attachment = await this.attachmentService.create({
+              name: fileName,
+              type: FileType.audio,
+              size: stats.size,
+              url: `/uploads/${fileName}`, // Relative URL
+              location: filePath,
+            });
 
-            // Clean up the temporary file after upload
-            fs.unlinkSync(tempFilePath);
-
-            if (uploadedFiles && uploadedFiles.length > 0) {
-              const uploadedFile = uploadedFiles[0];
-              resolve(uploadedFile); // Assuming location contains the file URL
-            } else {
-              reject('File upload failed.');
-            }
-          } catch (uploadError) {
-            console.error("Error during file upload:", uploadError);
-            reject(uploadError);
+            console.log(attachment)
+            
+            const attachmentPayload: AttachmentPayload<WithUrl<Attachment>> = {
+              payload: {
+                id: attachment.id, // ID from the database
+                name: attachment.name,
+                type: attachment.type,
+                size: attachment.size,
+                url: attachment.url, // URL from the database
+                location: attachment.location,
+                createdAt: attachment.createdAt,
+                updatedAt: attachment.updatedAt,
+              },
+              type: FileType.audio,
+            };
+  
+            console.log(`Attachment created: ${JSON.stringify(attachmentPayload)}`);
+            resolve(attachmentPayload);
+          } catch (error) {
+            console.error("Error creating attachment:", error);
+            reject(error);
           }
         });
-
+  
         writeStream.on('error', (error) => {
-          console.error("Error writing to file:", error);
+          console.error("Error writing audio file:", error);
           reject(error);
         });
       });
     } catch (error) {
       console.error("Error during text-to-speech conversion:", error);
-      throw error; // Re-throw the error to be handled in the process method
+      throw error;
     }
   }
 }
