@@ -53,7 +53,7 @@ export class VisionPlugin extends BaseBlockPlugin<typeof SETTINGS> {
     const groqClient = new Groq({
       apiKey: args['API Key'],
     })
-    const audioBool = 1
+    const audioBool = args['AudioOutput']
     const helper = this.helperService.use(HelperType.UTIL, SpeechHelper)
     
     console.log('Here is my context:', context);
@@ -117,7 +117,8 @@ export class VisionPlugin extends BaseBlockPlugin<typeof SETTINGS> {
     });  
     const output = chatCompletion.choices[0].message.content
     console.log(output);
-    if(!audioBool){
+    console.log("AUDIOBOOL", audioBool)
+    if (audioBool === '0') {
       const msg: StdOutgoingEnvelope = {
         format: OutgoingMessageFormat.text,
         message: { text: output },

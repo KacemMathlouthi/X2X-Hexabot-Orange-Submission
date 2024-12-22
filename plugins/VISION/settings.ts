@@ -6,7 +6,13 @@ export default [
     label: 'API Key',
     group: 'textarea',
     type: SettingType.text,
-    value: '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', 
+    value: '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', 
+  },
+  {
+    label: 'AudioOutput',
+    group: 'text',
+    type: SettingType.text,
+    value: '1', 
   },
 ] as const satisfies PluginSetting[];
 
