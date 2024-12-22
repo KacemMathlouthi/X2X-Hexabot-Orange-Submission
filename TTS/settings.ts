@@ -11,9 +11,15 @@ import { SettingType } from '@/setting/schemas/types';
 
 export default [
   {
-    label: 'message',
-    group: 'default',
-    type: SettingType.attachment,
-    value: 'attachment'
+    label: 'API Key',
+    group: 'textarea',
+    type: SettingType.text,
+    value: 'sk_9333f3ec62d9494d3b5e6e25d57c454e4d10b225d695aa72', 
+  },
+  {
+    label: 'Voice Id',
+    group: 'textarea',
+    type: SettingType.text,
+    value: '9BWtsMINqrJLrRacOk9x', 
   },
 ] as const satisfies PluginSetting[];

@@ -8,10 +8,10 @@ import { PluginService } from '@/plugins/plugins.service';
 import { PluginBlockTemplate } from '@/plugins/types';
 import { SettingService } from '@/setting/services/setting.service';
 import { Injectable } from '@nestjs/common';
-import * as crypto from 'crypto'; // Import crypto module for generating random IDs
-import { ElevenLabsClient } from 'elevenlabs'; // Assuming ElevenLabsClient is a valid class for the API client
+import * as crypto from 'crypto';
+import { ElevenLabsClient } from 'elevenlabs';
 import * as fs from 'fs';
-import * as path from 'path'; // Added to create a temporary path for the audio file
+import * as path from 'path';
 
 import { Attachment } from '@/attachment/schemas/attachment.schema';
 import { AttachmentPayload, FileType, WithUrl } from '@/chat/schemas/types/attachment';
@@ -21,7 +21,7 @@ import SETTINGS from './settings';
 @Injectable()
 export class TextToSpeechPlugin extends BaseBlockPlugin<typeof SETTINGS> {
   template: PluginBlockTemplate = {
-    patterns: ['speech'],  // Trigger by the word 'speech'
+    patterns: ['speech'],
     starts_conversation: true,
     name: 'Text to Speech Plugin',
   };
@@ -47,13 +47,12 @@ export class TextToSpeechPlugin extends BaseBlockPlugin<typeof SETTINGS> {
     const settings = await this.settingService.getSettings();
     const args = this.getArguments(block);
 
-    // Get the text to convert to speech (from block or user input)
     const context_msg = context.text;
     console.log(context_msg);
     
     try {
       // Call the textToSpeech function to generate audio and get the uploaded file's URL
-      const uploadedFile = await this.textToSpeech(context_msg);
+      const uploadedFile = await this.textToSpeech(context_msg, args);
       console.log(uploadedFile);
 
       // Construct the attachment message envelope
@@ -80,9 +79,9 @@ export class TextToSpeechPlugin extends BaseBlockPlugin<typeof SETTINGS> {
     }
   }
 
-  private async textToSpeech(text: string): Promise<AttachmentPayload<WithUrl<Attachment>>> {
-    const apiKey = "sk_9333f3ec62d9494d3b5e6e25d57c454e4d10b225d695aa72"; // Avoid hardcoding in production
-    const voiceId = "9BWtsMINqrJLrRacOk9x";
+  private async textToSpeech(text: string, args: any): Promise<AttachmentPayload<WithUrl<Attachment>>> {
+    const apiKey = args['API Key']; 
+    const voiceId = args['Voice Id'];
   
     if (!apiKey || !voiceId) {
       throw new Error("Missing APIKEY or VOICEID.");
