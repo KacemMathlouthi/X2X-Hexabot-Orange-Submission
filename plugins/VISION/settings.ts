@@ -14,6 +14,12 @@ export default [
     type: SettingType.text,
     value: '1', 
   },
+  {
+    label: 'prompt',
+    group: 'text',
+    type: SettingType.text,
+    value: "What's in this image?", 
+  },
 ] as const satisfies PluginSetting[];
 
 

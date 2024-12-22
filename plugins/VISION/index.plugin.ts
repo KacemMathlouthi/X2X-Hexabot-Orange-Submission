@@ -53,6 +53,8 @@ export class VisionPlugin extends BaseBlockPlugin<typeof SETTINGS> {
     const groqClient = new Groq({
       apiKey: args['API Key'],
     })
+
+    const systemPrompt = args['prompt']
     const audioBool = args['AudioOutput']
     const helper = this.helperService.use(HelperType.UTIL, SpeechHelper)
     
@@ -97,7 +99,7 @@ export class VisionPlugin extends BaseBlockPlugin<typeof SETTINGS> {
           "content": [
             {
               "type": "text",
-              "text": "What's in this image?"
+              "text": systemPrompt
             },
             {
               "type": "image_url",
